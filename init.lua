@@ -16,11 +16,17 @@ minetest.register_craft({
 })
 
 minetest.register_node("aviator:aviator", {
-	description = "aviation device",
-	tiles = {"aviator_node.png"},
+	description = "aviation device, fly priv for 10min",
+	tiles = {"aviator_aviator_top.png",
+		"aviator_aviator_bottom.png",
+		"aviator_aviator_side.png",
+		"aviator_aviator_side.png",
+		"aviator_aviator_side.png",
+		"aviator_aviator_side.png"},
 	is_ground_content = false,
 	diggable = false,
-	groups = {cracky=3, stone=1}, --, not_in_creative_inventory=1},
+	groups = {cracky=3, stone=1},
+	light_source = 12,
 
 	on_place = function(itemstack, placer, pointed_thing)
 		local name = placer:get_player_name()
@@ -73,7 +79,9 @@ minetest.register_globalstep(function(dtime)
 						privs.fly = true
 						minetest.set_player_privs(name, privs)
 					else
-						minetest.chat_send_player(name, core.colorize('#eeee00',"You left fly area ! "))
+						if distance > maxdistance and distance < (maxdistance+10) then
+							minetest.chat_send_player(name, core.colorize('#eeee00',"You left fly area ! "))
+						end
 						privs.fly = nil
 						minetest.set_player_privs(name, privs)
 					end
@@ -81,7 +89,7 @@ minetest.register_globalstep(function(dtime)
 						aviator_hud_id[name] = player:hud_add({
 						hud_elem_type = "text";
 						position = {x=0.5, y=0.80};
-						text = ">>> "..math.floor(leftover/60).." minutes left <<<";
+						text = ">>> "..math.floor(leftover/60).." minutes left, Distance: "..distance.." <<<";
 						number = 0xFFFF00;})
 					end
 					if leftover <= 10 then
