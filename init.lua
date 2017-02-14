@@ -1,4 +1,4 @@
--- aviator place block and fly
+-- aviator, place block and fly
 aviation = {}
 aviator_hud_id = {}
 
@@ -37,14 +37,28 @@ local function aviator_remove(pos, player)
 end
 
 
-minetest.register_craft({
-	output = 'aviator:aviator',
-	recipe = {
-		{"moreores:mithril_ingot", 'default:diamond', "moreores:mithril_ingot"},
-		{'default:diamond', "technic:uranium35_ingot", 'default:diamond'},
-		{"moreores:mithril_ingot", 'default:diamond', "moreores:mithril_ingot"},
-	}
-})
+
+if minetest.get_modpath("technic") and minetest.get_modpath("moreores") then
+	minetest.register_craft({
+		output = 'aviator:aviator',
+		recipe = {
+			{"moreores:mithril_ingot", 'default:diamond', "moreores:mithril_ingot"},
+			{'default:diamond', "technic:uranium35_ingot", 'default:diamond'},
+			{"moreores:mithril_ingot", 'default:diamond', "moreores:mithril_ingot"},
+		}
+	})
+else
+	minetest.register_craft({
+		output = 'aviator:aviator',
+		recipe = {
+			{"default:gold_ingot", 'default:diamond', "default:gold_ingot"},
+			{'default:diamond', "default:diamondblock", 'default:diamond'},
+			{"default:gold_ingot", 'default:diamond', "default:gold_ingot"},
+		}
+	})
+end
+
+
 
 minetest.register_node("aviator:aviator", {
 	description = "aviation device, fly priv for 10min",
@@ -97,11 +111,10 @@ minetest.register_node("aviator:aviator", {
 			inv:remove_item("main", items)
 			minetest.set_node(pos,oldnode)
 		end
-	end
-
-			
-	
+	end	
 })
+
+
 
 minetest.register_globalstep(function(dtime)
     
@@ -129,18 +142,31 @@ minetest.register_globalstep(function(dtime)
 					minetest.set_player_privs(name, privs)
 					else
 					if distance > maxdistance and distance < (maxdistance+10) then
-						minetest.chat_send_player(name, core.colorize('#eeee00',"You left fly area ! "))
+						player:hud_remove(aviator_hud_id[name])
+						aviator_hud_id[name] = player:hud_add({
+						hud_elem_type = "text";
+						position = {x=0.5, y=0.80};
+						text = ">>> Warning, you left fly area <<<";number = 0xFFFF00;})
+						leftover = -1
+					end
+					if distance > (maxdistance+10) then
+						player:hud_remove(aviator_hud_id[name])
+						aviator_remove(aviation[name], player)
+						leftover = -1
 					end
 					privs.fly = nil
 					minetest.set_player_privs(name, privs)
 					end
 					if leftover > 10 then
+						if aviator_hud_id[name] then
+							player:hud_remove(aviator_hud_id[name])
+						end
 						aviator_hud_id[name] = player:hud_add({
 						hud_elem_type = "text";
 						position = {x=0.5, y=0.80};
 						text = ">>> "..math.floor(leftover/60).." minutes left, Distance: "..distance.." <<<";number = 0xFFFF00;})
 					end
-					if leftover <= 10 then		
+					if leftover <= 10 and leftover >0 then
 						aviator_hud_id[name] = player:hud_add({
 						hud_elem_type = "text";
 						position = {x=0.5, y=0.45};
@@ -162,6 +188,8 @@ minetest.register_globalstep(function(dtime)
 	end
 end)
 
+
+-- add aviator to inventory if any
 minetest.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
 	if aviation[name] ~= nil then
@@ -174,6 +202,7 @@ minetest.register_on_leaveplayer(function(player)
 end)
 
 
+-- still someone with fly priv ? strange.
 minetest.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
 	local privs = minetest.get_player_privs(name)
@@ -186,6 +215,7 @@ minetest.register_on_joinplayer(function(player)
 end)
 
 
+-- add aviator to inventory if any
 minetest.register_on_shutdown(function()
 	local players = minetest.get_connected_players()
 	for _,player in pairs(players) do
