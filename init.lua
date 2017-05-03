@@ -2,7 +2,7 @@
 aviation = {}
 aviator_hud_id = {}
 
-local flength = 600     -- how many seconds you can fly
+local flength = 900     -- how many seconds you can fly
 local checktime = 1     -- check interval
 local maxdistance = 20  -- maxradius
 local timer = 0
@@ -61,7 +61,7 @@ end
 
 
 minetest.register_node("aviator:aviator", {
-	description = "aviation device, fly priv for 10min",
+	description = "aviation device, fly priv for "..(flength/60).." min",
 	tiles = {"aviator_aviator_top.png",
 		"aviator_aviator_bottom.png",
 		"aviator_aviator_side.png",
@@ -229,5 +229,28 @@ minetest.register_on_shutdown(function()
 		end
 	end
 end)
-	
+
+-- add chatcommand to call back aviator
+
+minetest.register_chatcommand("7", {
+	params = "",
+	description = "Calls your aviator back to inventory",
+	privs = {interact = true},
+	func = function(name, param)
+                local player = minetest.get_player_by_name(name)
+
+		if aviation[name] ~= nil then
+
+			aviator_remove(aviation[name], player)
+		
+		else
+
+			local colorstring = core.colorize('#ff0000', " >>> you did not place an aviator ")
+			minetest.chat_send_player(name,colorstring)
+
+		end
+	end
+
+			
+})
 
