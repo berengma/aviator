@@ -10,3 +10,8 @@ Also the block will be saved to inventory if you
 go too far from it, if you leave the game or the
 server shuts down.
 
+Added a chatcommand "/7" to call back your aviator
+to your inventory. This allows climbing and other
+more convinient use of it.
+
+
