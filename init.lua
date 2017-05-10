@@ -2,10 +2,15 @@
 aviation = {}
 aviator_hud_id = {}
 
-local flength = 900     -- how many seconds you can fly
-local checktime = 1     -- check interval
-local maxdistance = 20  -- maxradius
+-- configure mod here
+local flength = 1800     -- how many seconds you can fly
+local maxdistance = 20   -- maxradius (values >20 will need extra cpu power using forceloaded blocks)
+-- end configuration
+
+local checktime = 1
 local timer = 0
+local trans = {}
+
 
 local function aviator_remove(pos, player)
 	local name = player:get_player_name()
@@ -31,6 +36,9 @@ local function aviator_remove(pos, player)
 					minetest.set_player_privs(name, privs)
 					minetest.set_node(aviation[name], {name = "air"})
 					aviation[name] = nil
+					if maxdistance >20 then
+					    core.forceload_free_block(pos,trans)
+					end
 				end
 			end
 	return
@@ -83,6 +91,11 @@ minetest.register_node("aviator:aviator", {
 			minetest.set_node(pointed_thing.above, {name="aviator:aviator"})
 			itemstack:take_item()
 			aviation[name]=pointed_thing.above
+			if maxdistance > 20 then
+			    if core.forceload_block(pointed_thing.above,trans) == false then
+					      minetest.chat_send_all("Forceload Error -- please use radius <21 or check your minetest.config and set max_forceloaded_blocks = 1000")
+			    end
+			end
 			if not meta.runtime then
 				timer:start(flength)
 			else
@@ -240,14 +253,9 @@ minetest.register_chatcommand("7", {
                 local player = minetest.get_player_by_name(name)
 
 		if aviation[name] ~= nil then
-
 			aviator_remove(aviation[name], player)
-		
 		else
-
-			local colorstring = core.colorize('#ff0000', " >>> you did not place an aviator ")
-			minetest.chat_send_player(name,colorstring)
-
+			minetest.chat_send_player(name,core.colorize('#ff0000', " >>> you did not place an aviator "))
 		end
 	end
 

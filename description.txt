@@ -1,0 +1,1 @@
+Adds a craftable node to grant fly priv in an area around it.
