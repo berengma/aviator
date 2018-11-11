@@ -2,14 +2,15 @@
 aviation = {}
 aviator_hud_id = {}
 
--- configure mod here
+local getsetting = (minetest.settings:get("active_block_range") or 1) * 32
 local flength = 1800     -- how many seconds you can fly
-local maxdistance = 20   -- maxradius (values >20 will need extra cpu power using forceloaded blocks)
--- end configuration
-
-local checktime = 1
+local checktime = 1     -- check interval
+local maxdistance = 50  -- maxradius
 local timer = 0
 local trans = {}
+local force = false
+
+if maxdistance > getsetting then force = true end
 
 
 local function aviator_remove(pos, player)
@@ -36,9 +37,8 @@ local function aviator_remove(pos, player)
 					minetest.set_player_privs(name, privs)
 					minetest.set_node(aviation[name], {name = "air"})
 					aviation[name] = nil
-					if maxdistance >20 then
-					    core.forceload_free_block(pos,trans)
-					end
+					if force then core.forceload_free_block(pos,trans) end
+					
 				end
 			end
 	return
@@ -55,6 +55,13 @@ if minetest.get_modpath("technic") and minetest.get_modpath("moreores") then
 			{"moreores:mithril_ingot", 'default:diamond', "moreores:mithril_ingot"},
 		}
 	})
+elseif minetest.get_modpath("basic_machines") then
+  
+	-- do it with constructor !
+	    basic_machines.craft_recipes["aviator"] = {item = "aviator:aviator", description = "let you fly "..math.floor(flength/60).."min in an area of "..maxdistance.." nodes", craft = {"default:diamondblock 256","basic_machines:power_rod 25", "default:mese 256","basic_machines:keypad"}, tex = "aviator_aviator_side"}
+	    table.insert(basic_machines.craft_recipe_order,"aviator")
+	    basic_machines.hardness["aviator:aviator"] = 999999
+  
 else
 	minetest.register_craft({
 		output = 'aviator:aviator',
@@ -91,10 +98,10 @@ minetest.register_node("aviator:aviator", {
 			minetest.set_node(pointed_thing.above, {name="aviator:aviator"})
 			itemstack:take_item()
 			aviation[name]=pointed_thing.above
-			if maxdistance > 20 then
-			    if core.forceload_block(pointed_thing.above,trans) == false then
-					      minetest.chat_send_all("Forceload Error -- please use radius <21 or check your minetest.config and set max_forceloaded_blocks = 1000")
-			    end
+			if force then
+			      if core.forceload_block(pointed_thing.above,trans) == false then
+					      -- minetest.chat_send_all("Forceload Error")
+					      end
 			end
 			if not meta.runtime then
 				timer:start(flength)
@@ -253,9 +260,14 @@ minetest.register_chatcommand("7", {
                 local player = minetest.get_player_by_name(name)
 
 		if aviation[name] ~= nil then
+
 			aviator_remove(aviation[name], player)
+		
 		else
-			minetest.chat_send_player(name,core.colorize('#ff0000', " >>> you did not place an aviator "))
+
+			local colorstring = core.colorize('#ff0000', " >>> you did not place an aviator ")
+			minetest.chat_send_player(name,colorstring)
+
 		end
 	end
 
