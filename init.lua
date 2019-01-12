@@ -7,7 +7,7 @@ local flength = 1800     -- how many seconds you can fly
 local checktime = 1     -- check interval
 local maxdistance = 50  -- maxradius
 local timer = 0
-local trans = {}
+local trans = true	--  no permanent forceload block if server shuts down
 local force = false
 
 if maxdistance > getsetting then force = true end
