@@ -1,14 +1,19 @@
--- aviator, place block and fly
+-- aviator, place block and fly, now also TNT resistant
+
 aviation = {}
 aviator_hud_id = {}
 
-local getsetting = (minetest.settings:get("active_block_range") or 1) * 32
+local getsetting = tonumber((minetest.settings:get("active_block_range")) or 1) * 32
 local flength = 1800     -- how many seconds you can fly
 local checktime = 1     -- check interval
 local maxdistance = 50  -- maxradius
 local timer = 0
 local trans = true	--  no permanent forceload block if server shuts down
 local force = false
+
+if minetest.get_modpath("mesecons_mvps") then -- pull and push resistant
+   mesecon.register_mvps_stopper("aviator:aviator")
+end
 
 if maxdistance > getsetting then force = true end
 
@@ -87,6 +92,8 @@ minetest.register_node("aviator:aviator", {
 	diggable = true,
 	groups = {oddly_breakable_by_hand=3},
 	light_source = 12,
+	
+	on_blast = function() end, -- TNT resistant
 
 	on_place = function(itemstack, placer, pointed_thing)
 		local name = placer:get_player_name()
