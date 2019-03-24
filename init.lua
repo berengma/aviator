@@ -153,7 +153,7 @@ minetest.register_globalstep(function(dtime)
 			              
 		local name = player:get_player_name()
 			if aviation[name] ~= nil and aviation[name] ~= {} then
-				local pos = player:getpos()
+				local pos = player:get_pos()
 				local ntime = minetest.get_node_timer(aviation[name])
 				local timeout = ntime:get_timeout() 
 				local elapsed = ntime:get_elapsed()
