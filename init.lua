@@ -18,7 +18,7 @@ end
 if maxdistance > getsetting then force = true end
 
 
-local function aviator_remove(pos, player)
+local function aviator_remove(pos, player, leave)
 	local name = player:get_player_name()
 			if aviation[name] ~= nil then
 				local items = ItemStack("aviator:aviator 1")
@@ -28,12 +28,25 @@ local function aviator_remove(pos, player)
 				local elapsed = ntime:get_elapsed()
 				local inv = minetest.get_inventory({type="player", name=name})
 				local privs = minetest.get_player_privs(name)
-
-			
+				meta.runtime = -1
+				items:set_metadata(minetest.serialize(meta))
+				
+				if not inv:room_for_item("main", items) and not leave then
+					minetest.chat_send_player(name, core.colorize('#ff0000', ">>> ERROR: could not take aviator, inventory full !"))
+					player:set_pos(aviation[name])
+					return
+				end
+				
+				
 				if vector.distance(pos, aviation[name]) == 0 then
 					meta.runtime = timeout - elapsed
 					items:set_metadata(minetest.serialize(meta))
-					inv:add_item("main", items)
+					if inv:room_for_item("main", items) then
+						inv:add_item("main", items)
+					else
+						local dpos = player:get_pos()
+						minetest.spawn_item(dpos, items)
+					end
 					ntime:stop()
 					if aviator_hud_id[name] then
 						player:hud_remove(aviator_hud_id[name])
@@ -223,7 +236,7 @@ minetest.register_on_leaveplayer(function(player)
 		local privs = minetest.get_player_privs(name)
 		privs.fly = nil
 		minetest.set_player_privs(name, privs)
-		aviator_remove(aviation[name], player)
+		aviator_remove(aviation[name], player, true)
 		aviation[name] = nil
 	end
 end)
@@ -251,7 +264,7 @@ minetest.register_on_shutdown(function()
 			local privs = minetest.get_player_privs(name)
 			privs.fly = nil
 			minetest.set_player_privs(name, privs)
-			aviator_remove(aviation[name], player)
+			aviator_remove(aviation[name], player, true)
 			aviation[name] = nil
 		end
 	end
