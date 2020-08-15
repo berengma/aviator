@@ -4,18 +4,30 @@ aviation = {}
 aviator_hud_id = {}
 
 local getsetting = tonumber((minetest.settings:get("active_block_range")) or 1) * 32
-local flength = 1800     -- how many seconds you can fly
+local flength = tonumber((minetest.settings:get("aviator_flight_length")) or 30) * 60		-- how many seconds you can fly
 local checktime = 1     -- check interval
-local maxdistance = 50  -- maxradius
+local maxdistance = tonumber((minetest.settings:get("aviator_flight_radius")) or 50)			-- maxradius
 local timer = 0
-local trans = true	--  no permanent forceload block if server shuts down
+local trans = true																--  no permanent forceload block if server shuts down
 local force = false
 
-if minetest.get_modpath("mesecons_mvps") then -- pull and push resistant
-   mesecon.register_mvps_stopper("aviator:aviator")
+
+if minetest.get_modpath("mesecons_mvps") then										-- pull and push resistant to pistons
+	mesecon.register_mvps_stopper("aviator:aviator")
 end
 
 if maxdistance > getsetting then force = true end
+
+
+
+local function aviator_get_air_pos(pos)
+	local nodes = minetest.find_nodes_in_area({x=pos.x-1, y=pos.y, z=pos.z-1}, {x=pos.x+1, y=pos.y+1, z=pos.z+1}, {"air"})
+	if not nodes or #nodes < 1 then
+		return nil
+	else
+		return nodes[math.random(#nodes)]
+	end
+end
 
 
 local function aviator_remove(pos, player, leave)
@@ -76,7 +88,7 @@ if minetest.get_modpath("technic") and minetest.get_modpath("moreores") then
 elseif minetest.get_modpath("basic_machines") then
   
 	-- do it with constructor !
-	    basic_machines.craft_recipes["aviator"] = {item = "aviator:aviator", description = "let you fly "..math.floor(flength/60).."min in an area of "..maxdistance.." nodes", craft = {"default:diamondblock 256","basic_machines:power_rod 25", "default:mese 256","basic_machines:keypad"}, tex = "aviator_aviator_side"}
+	    basic_machines.craft_recipes["aviator"] = {item = "aviator:aviator", description = "let you fly "..math.floor(flength/60).."min in an area of "..maxdistance.." nodes", craft = {"default:diamondblock 16","basic_machines:power_rod 25", "default:mese 16","basic_machines:keypad"}, tex = "aviator_aviator_side"}
 	    table.insert(basic_machines.craft_recipe_order,"aviator")
 	    basic_machines.hardness["aviator:aviator"] = 999999
   
@@ -104,22 +116,27 @@ minetest.register_node("aviator:aviator", {
 	is_ground_content = false,
 	diggable = true,
 	groups = {oddly_breakable_by_hand=3},
+	liquids_pointable = true,
 	light_source = 12,
+	node_placement_prediction = "",			-- important to avoid double placement
 	
 	on_blast = function() end, -- TNT resistant
 
 	on_place = function(itemstack, placer, pointed_thing)
 		local name = placer:get_player_name()
 		local meta = minetest.deserialize(itemstack:get_metadata()) or {}
+		local pos = aviator_get_air_pos(pointed_thing.under)
+                                           
+		if not pos then return itemstack end
 	
 		if not aviation[name] then
-			
-			local timer = minetest.get_node_timer(pointed_thing.above)
-			minetest.set_node(pointed_thing.above, {name="aviator:aviator"})
+			local nname = itemstack:get_name()
+			local timer = minetest.get_node_timer(pos)
+			minetest.set_node(pos, {name=nname})
 			itemstack:take_item()
-			aviation[name]=pointed_thing.above
+			aviation[name]=pos
 			if force then
-			      if core.forceload_block(pointed_thing.above,trans) == false then
+			      if core.forceload_block(pos,trans) == false then
 					      -- minetest.chat_send_all("Forceload Error")
 					      end
 			end

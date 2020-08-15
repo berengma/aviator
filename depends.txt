@@ -1,4 +1,0 @@
-moreores?
-technic?
-basic_machines?
-default

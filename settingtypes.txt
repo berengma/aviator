@@ -1,0 +1,10 @@
+# all settings for client menu or in minetest.conf on servers
+
+# -
+# maximum time an aviator can be used
+aviator_flight_length (max flight length in minutes) int 30
+
+# maximum radius in which an aviator works
+aviator_flight_radius (max radius an aviator grants fly) int 50
+
+
