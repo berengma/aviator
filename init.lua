@@ -30,6 +30,38 @@ local function aviator_get_air_pos(pos)
 end
 
 
+local function aviator_update_hud(player,name,leftover,distance)				-- hud_change(id, stat, value)  `position`, `name`, `scale`, `text`, `number`, `item`, `dir`
+	
+	if distance > maxdistance and distance < (maxdistance+10) then
+		player:hud_change(aviator_hud_id[name], 'text', ">>> Warning, you left fly area <<<")
+		player:hud_change(aviator_hud_id[name], 'position' , {x=0.5, y=0.80})
+		player:hud_change(aviator_hud_id[name], 'number', 0xFF0000)
+		leftover = -1
+	end
+	
+	if leftover > 10 then
+		if distance < (maxdistance-10) then
+			player:hud_change(aviator_hud_id[name], 'text', ">>> "..math.floor(leftover/60).." minutes left, Distance: "..distance.." <<<")
+			player:hud_change(aviator_hud_id[name], 'position' , {x=0.5, y=0.80})
+			player:hud_change(aviator_hud_id[name], 'number', 0xFFFF00)
+		end
+		if distance >= (maxdistance-10) and distance <= maxdistance then
+			player:hud_change(aviator_hud_id[name], 'text', ">>> "..math.floor(leftover/60).." minutes left, Distance: "..distance.. " <<< !NEAR MAXRADIUS!")
+			player:hud_change(aviator_hud_id[name], 'position' , {x=0.5, y=0.80})
+			player:hud_change(aviator_hud_id[name], 'number', 0xFFA500)
+		end
+	end
+	
+	if leftover <= 10 and leftover >0 then
+		player:hud_change(aviator_hud_id[name], 'text', ">>> "..leftover.." <<<")
+		player:hud_change(aviator_hud_id[name], 'position' , {x=0.5, y=0.45})
+		player:hud_change(aviator_hud_id[name], 'number', 0xFF0000)
+	end
+	
+	return leftover
+end
+
+
 local function aviator_remove(pos, player, leave)
 	local name = player:get_player_name()
 			if aviation[name] ~= nil then
@@ -132,6 +164,8 @@ minetest.register_node("aviator:aviator", {
 		if not aviation[name] then
 			local nname = itemstack:get_name()
 			local timer = minetest.get_node_timer(pos)
+			local leftover = 0
+                                           
 			minetest.set_node(pos, {name=nname})
 			itemstack:take_item()
 			aviation[name]=pos
@@ -140,13 +174,21 @@ minetest.register_node("aviator:aviator", {
 					      -- minetest.chat_send_all("Forceload Error")
 					      end
 			end
+                                           
 			if not meta.runtime then
 				timer:start(flength)
+				leftover = flength
 			else
+				leftover = meta.runtime
 				timer:start(meta.runtime)
 				meta = {}
 				itemstack:set_metadata(minetest.serialize(meta))
-			end	
+			end
+			
+			aviator_hud_id[name] = placer:hud_add({
+			hud_elem_type = "text";
+			position = {x=0.5, y=0.80};
+			text = ">>> "..math.floor(leftover/60).." minutes left <<<";number = 0xFFFF00;})
 		else
 			minetest.chat_send_player(name,core.colorize('#eeee00', "You placed already one Aviator at: "..aviation[name].x..","..aviation[name].y..","..aviation[name].z))
 		end
@@ -178,7 +220,7 @@ minetest.register_globalstep(function(dtime)
 	timer = timer + dtime
 	if timer >= checktime then
 	  
-	local players = minetest.get_connected_players();		
+		local players = minetest.get_connected_players();		
 		for _,player in pairs(players) do
 			              
 		local name = player:get_player_name()
@@ -190,46 +232,23 @@ minetest.register_globalstep(function(dtime)
 				local leftover = timeout - elapsed
 				local distance = math.floor(vector.distance(pos, aviation[name]))
 				local privs = minetest.get_player_privs(name)
-				if aviator_hud_id[name] then
-					player:hud_remove(aviator_hud_id[name])
-				end
+				
 				if timeout > 0 then
 					if distance <= maxdistance then 
-					privs.fly = true
-					minetest.set_player_privs(name, privs)
+						privs.fly = true
+						minetest.set_player_privs(name, privs)
+						leftover = aviator_update_hud(player,name,leftover,distance)
 					else
-					if distance > maxdistance and distance < (maxdistance+10) then
-						player:hud_remove(aviator_hud_id[name])
-						aviator_hud_id[name] = player:hud_add({
-						hud_elem_type = "text";
-						position = {x=0.5, y=0.80};
-						text = ">>> Warning, you left fly area <<<";number = 0xFFFF00;})
-						leftover = -1
-					end
-					if distance > (maxdistance+10) then
-						player:hud_remove(aviator_hud_id[name])
-						aviator_remove(aviation[name], player)
-						leftover = -1
-					end
-					privs.fly = nil
-					minetest.set_player_privs(name, privs)
-					end
-					if leftover > 10 then
-						if aviator_hud_id[name] then
+						
+						if distance > (maxdistance+10) then
 							player:hud_remove(aviator_hud_id[name])
+							aviator_remove(aviation[name], player)
+							leftover = -1
 						end
-						aviator_hud_id[name] = player:hud_add({
-						hud_elem_type = "text";
-						position = {x=0.5, y=0.80};
-						text = ">>> "..math.floor(leftover/60).." minutes left, Distance: "..distance.." <<<";number = 0xFFFF00;})
+						privs.fly = nil
+						minetest.set_player_privs(name, privs)
 					end
-					if leftover <= 10 and leftover >0 then
-						aviator_hud_id[name] = player:hud_add({
-						hud_elem_type = "text";
-						position = {x=0.5, y=0.45};
-						text = ">>> "..leftover.." <<<";
-						number = 0xFFFF00;})
-					end	
+					leftover = aviator_update_hud(player,name,leftover,distance)
 				else
 					if aviator_hud_id[name] then
 						player:hud_remove(aviator_hud_id[name])
