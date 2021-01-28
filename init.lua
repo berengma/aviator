@@ -224,7 +224,12 @@ minetest.register_globalstep(function(dtime)
 		for _,player in pairs(players) do
 			              
 		local name = player:get_player_name()
-			if aviation[name] ~= nil and aviation[name] ~= {} then
+
+		if player:is_player() then
+			local checkhere = minetest.get_player_privs(name)
+			if checkhere.permfly then checkhere.fly = true end
+		end
+		if aviation[name] ~= nil and aviation[name] ~= {} then
 				local pos = player:get_pos()
 				local ntime = minetest.get_node_timer(aviation[name])
 				local timeout = ntime:get_timeout() 
@@ -284,7 +289,7 @@ minetest.register_on_joinplayer(function(player)
 	local privs = minetest.get_player_privs(name)
 	
 
-	if privs.fly and not privs.server then
+	if privs.fly and (not privs.server or not privs.permfly) then
 		privs.fly = nil
 		minetest.set_player_privs(name, privs)
 	end
@@ -330,3 +335,8 @@ minetest.register_chatcommand("7", {
 			
 })
 
+
+minetest.register_privilege("permfly", {
+	description = "permanent fly priv without aviator",
+	give_to_singleplayer= false,
+})
