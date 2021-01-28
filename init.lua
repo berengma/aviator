@@ -11,7 +11,6 @@ local timer = 0
 local trans = true																--  no permanent forceload block if server shuts down
 local force = false
 
-
 if minetest.get_modpath("mesecons_mvps") then										-- pull and push resistant to pistons
 	mesecon.register_mvps_stopper("aviator:aviator")
 end
@@ -219,16 +218,22 @@ minetest.register_globalstep(function(dtime)
     
 	timer = timer + dtime
 	if timer >= checktime then
-	  
+		
 		local players = minetest.get_connected_players();		
 		for _,player in pairs(players) do
 			              
 		local name = player:get_player_name()
 
+		
 		if player:is_player() then
 			local checkhere = minetest.get_player_privs(name)
-			if checkhere.permfly then checkhere.fly = true end
+			if checkhere.permfly then
+                            checkhere.fly = true
+                            minetest.set_player_privs(name, checkhere)
+			end
+				
 		end
+		
 		if aviation[name] ~= nil and aviation[name] ~= {} then
 				local pos = player:get_pos()
 				local ntime = minetest.get_node_timer(aviation[name])
